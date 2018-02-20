@@ -21,6 +21,7 @@ class Crta():
         self.canvas.bind("<Button-1>", self.nadaljuj_crto)
 
         # Registiramo se za klike z desnim gumbom na canvasu
+        # Če imaš Mac OS, nastavi "<Button-2>"
         self.canvas.bind("<Button-3>", self.zacni_crto)
 
 

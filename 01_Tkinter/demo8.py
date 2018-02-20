@@ -31,7 +31,7 @@ class Vsota():
     def izracunaj(self, name, index, mode):
         try:
             self.c.set(self.a.get() + self.b.get())
-        except ValueError:
+        except:
             self.c.set("nedefinirano")
 
 # Glavnemu oknu rečemo "root" (koren), ker so grafični elementi

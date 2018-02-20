@@ -19,7 +19,7 @@ class Stevec():
         # v neskončost "računal" razporeditev elementov!
 
         gumb_povecaj = Button(master, text=" +1 ", command=self.povecaj)
-        #gumb_povecaj.grid(row=0, column=0)
+        gumb_povecaj.grid(row=0, column=0)
 
         gumb_zmanjsaj = Button(master, text=" -1 ", command=self.zmanjsaj)
         gumb_zmanjsaj.grid(row=1, column=1)
