@@ -1,6 +1,7 @@
 # Preprosta igrica
 import tkinter
 import time
+import random
 
 # Spodaj je vesoljska ladjica, ki jo lahko premikamo levo in desno
 # Ladjica strelja metke (pritisk na presledek)
@@ -34,8 +35,10 @@ import time
 WIDTH=500
 HEIGHT=500
 
-VR=20 # Polmer vesoljca
+MINVR=5 # Minimalni polmer vesoljca
+MAXVR=30 # Maksimalni polmer vesoljca
 VN=5  # Število vesoljcev v zgornji vrsti
+VHITROST=20  # Hitrost premikanja vesoljčka
 
 LW=20 # Širina ladjice
 LH=40 # Višina ladjice
@@ -51,8 +54,46 @@ METEK_TIMEOUT = 0.25 # PREMOR MED METKI (sekunde)
 class Vesoljec():
 
     def __init__(self, igrica, x, y):
+        self.x = x
+        self.y = y
         self.igrica = igrica
-        self.gid = self.igrica.canvas.create_oval(x-VR, y-VR, x+VR, y+VR, fill="green")
+        self.r = random.uniform(MINVR, MAXVR)
+        self.t = time.time() # Kdaj smo se nazadnje animirali
+        self.gid = self.igrica.canvas.create_oval(0, 0, 1, 1, fill="green")
+        self.zivim = True
+        self.osvezi()
+        # Začetna hitrost
+        self.vx = random.uniform(-WIDTH/5, WIDTH/5)*2
+        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*2
+        self.animiraj()
+
+    def osvezi(self):
+        """Postavi vesoljčka na zaslonu na trenutne koordinate."""
+        self.igrica.canvas.coords(self.gid, self.x-self.r, self.y-self.r, self.x+self.r, self.y+self.r)
+
+    def premakni(self, dt):
+        '''Izračunaj novo stanje vesoljčka po preteku časa dt.'''
+        self.x = self.x + self.vx * dt
+        self.y = self.y + self.vy * dt
+        # Preverimo odboje
+        if self.x - self.r < WIDTH/10:
+            self.vx = -self.vx
+        if self.x + self.r > 9*WIDTH/10:
+            self.vx = -self.vx
+        if self.y - self.r < HEIGHT/10:
+            self.vy = -self.vy
+        if self.y + self.r > 7*HEIGHT/10:
+            self.vy = -self.vy
+    
+    def animiraj(self):
+        if self.zivim:
+            t2 = time.time()
+            dt = t2 - self.t
+            self.premakni(dt)
+            self.t = t2
+            self.osvezi()
+            self.igrica.canvas.after(5, self.animiraj)
+        
 
 class Ladjica():
 
@@ -139,6 +180,7 @@ class Metek():
 class Igrica():
 
     def zbrisi_vesoljca(self, vesoljec):
+        vesoljec.zivim = False
         self.canvas.delete(vesoljec.gid) # zbrisemo iz zaslona
         self.vesoljci.remove(vesoljec) # odstranimo iz spiska
 
@@ -147,6 +189,7 @@ class Igrica():
         self.canvas.grid(row=0, column=0)
         self.canvas.focus_set()
         # Dodamo vesoljce
+        VR = (MINVR + MAXVR)/2
         y = HEIGHT/10 + VR
         # TODO: popravi formulo, da bodo centrirani
         x0 = (WIDTH - 2 * VR * VN - VR * (VN - 1)) / 2
