@@ -40,6 +40,12 @@ MAXVR=30 # Maksimalni polmer vesoljca
 VN=5  # Število vesoljcev v zgornji vrsti
 VHITROST=20  # Hitrost premikanja vesoljčka
 
+# Območje črne luknje, kjer živijo vesoljčki
+LEVI_ROB = WIDTH/10
+DESNI_ROB = 9*WIDTH/10
+ZGORNJI_ROB = HEIGHT/10
+SPODNJI_ROB = 7*HEIGHT/10
+
 LW=20 # Širina ladjice
 LH=40 # Višina ladjice
 LPREMIK=5 # Koliko se naenkrat premaknemo z ladjico
@@ -57,14 +63,14 @@ class Vesoljec():
         self.x = x
         self.y = y
         self.igrica = igrica
-        self.r = random.uniform(MINVR, MAXVR)
+        self.r = random.uniform(MINVR, MAXVR) # vesoljčki so različno debeli
         self.t = time.time() # Kdaj smo se nazadnje animirali
         self.gid = self.igrica.canvas.create_oval(0, 0, 1, 1, fill="green")
-        self.zivim = True
+        self.zivim = True   # Ali je vesoljček še živ
         self.osvezi()
         # Začetna hitrost
-        self.vx = random.uniform(-WIDTH/5, WIDTH/5)*2
-        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*2
+        self.vx = random.uniform(-WIDTH/5, WIDTH/5)
+        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*
         self.animiraj()
 
     def osvezi(self):
@@ -76,14 +82,18 @@ class Vesoljec():
         self.x = self.x + self.vx * dt
         self.y = self.y + self.vy * dt
         # Preverimo odboje
-        if self.x - self.r < WIDTH/10:
+        if self.x - self.r < LEVI_ROB:
             self.vx = -self.vx
-        if self.x + self.r > 9*WIDTH/10:
+            self.x = LEVI_ROB + self.r  # če se 'zabijemo' v rob, premaknemo kroglico ob rob
+        if self.x + self.r > DESNI_ROB:
             self.vx = -self.vx
-        if self.y - self.r < HEIGHT/10:
+            self.x = DESNI_ROB - self.r
+        if self.y - self.r < ZGORNJI_ROB:
             self.vy = -self.vy
-        if self.y + self.r > 7*HEIGHT/10:
+            self.y = ZGORNJI_ROB + self.r
+        if self.y + self.r > SPODNJI_ROB:
             self.vy = -self.vy
+            self.y = SPODNJI_ROB - self.r
     
     def animiraj(self):
         if self.zivim:
