@@ -2,6 +2,7 @@
 import tkinter
 import time
 import random
+from tkinter import font
 
 # Spodaj je vesoljska ladjica, ki jo lahko premikamo levo in desno
 # Ladjica strelja metke (pritisk na presledek)
@@ -69,8 +70,8 @@ class Vesoljec():
         self.zivim = True   # Ali je vesoljček še živ
         self.osvezi()
         # Začetna hitrost
-        self.vx = random.uniform(-WIDTH/5, WIDTH/5)
-        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*
+        self.vx = random.uniform(-WIDTH/5, WIDTH/5)*5
+        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*5
         self.animiraj()
 
     def osvezi(self):
@@ -193,11 +194,23 @@ class Igrica():
         vesoljec.zivim = False
         self.canvas.delete(vesoljec.gid) # zbrisemo iz zaslona
         self.vesoljci.remove(vesoljec) # odstranimo iz spiska
+        if len(self.vesoljci) == 0:
+            self.konec_igre()
 
     def __init__(self, master):
         self.canvas = tkinter.Canvas(master, width=WIDTH, height=HEIGHT, background="black")
         self.canvas.grid(row=0, column=0)
         self.canvas.focus_set()
+        self.napis = None
+        self.zacni_igro()
+
+    def izbrisi_napis(self):
+        if self.napis is not None:
+            self.canvas.delete(self.napis)
+            self.napis = None
+            
+    def zacni_igro(self):
+        self.izbrisi_napis()
         # Dodamo vesoljce
         VR = (MINVR + MAXVR)/2
         y = HEIGHT/10 + VR
@@ -205,6 +218,10 @@ class Igrica():
         x0 = (WIDTH - 2 * VR * VN - VR * (VN - 1)) / 2
         self.vesoljci = [Vesoljec(self, x0 + i * (3 * VR), y) for i in range(VN)]
         self.ladjica = Ladjica(self, WIDTH/2, 9*HEIGHT/10 - LH)
+        
+    def konec_igre(self):
+        fnt = font.Font(family='Helvetica', size=50, weight='bold')
+        self.napis = self.canvas.create_text(WIDTH/2, HEIGHT/2, text='Game over', fill='white', font=fnt) 
 
 
 
