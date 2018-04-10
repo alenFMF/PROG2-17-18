@@ -3,6 +3,7 @@ import tkinter
 import time
 import random
 from tkinter import font
+import math
 
 # Spodaj je vesoljska ladjica, ki jo lahko premikamo levo in desno
 # Ladjica strelja metke (pritisk na presledek)
@@ -39,17 +40,17 @@ HEIGHT=500
 MINVR=5 # Minimalni polmer vesoljca
 MAXVR=30 # Maksimalni polmer vesoljca
 VN=5  # Število vesoljcev v zgornji vrsti
-VHITROST=20  # Hitrost premikanja vesoljčka
+VHITROST=800  # Max hitrost premikanja vesoljčka
 
 # Območje črne luknje, kjer živijo vesoljčki
 LEVI_ROB = WIDTH/10
 DESNI_ROB = 9*WIDTH/10
 ZGORNJI_ROB = HEIGHT/10
-SPODNJI_ROB = 7*HEIGHT/10
+SPODNJI_ROB = 9*HEIGHT/10
 
 LW=20 # Širina ladjice
 LH=40 # Višina ladjice
-LPREMIK=5 # Koliko se naenkrat premaknemo z ladjico
+LPREMIK=10 # Koliko se naenkrat premaknemo z ladjico
 
 MW=5  # Širina metka
 MH=20 # Višina metka
@@ -65,13 +66,13 @@ class Vesoljec():
         self.y = y
         self.igrica = igrica
         self.r = random.uniform(MINVR, MAXVR) # vesoljčki so različno debeli
-        self.t = time.time() # Kdaj smo se nazadnje animirali
+        self.t = time.time() # Kdaj s se nazadnje animirali
         self.gid = self.igrica.canvas.create_oval(0, 0, 1, 1, fill="green")
         self.zivim = True   # Ali je vesoljček še živ
         self.osvezi()
         # Začetna hitrost
-        self.vx = random.uniform(-WIDTH/5, WIDTH/5)*5
-        self.vy = random.uniform(-HEIGHT/5, HEIGHT/5)*5
+        self.vx = random.uniform(-VHITROST/5, VHITROST/5)
+        self.vy = random.uniform(-VHITROST/5, VHITROST/5)
         self.animiraj()
 
     def osvezi(self):
@@ -97,12 +98,20 @@ class Vesoljec():
             self.y = SPODNJI_ROB - self.r
     
     def animiraj(self):
-        if self.zivim:
+        if not self.igrica.igra_v_teku(): return
+        if self.zivim:                      
             t2 = time.time()
             dt = t2 - self.t
             self.premakni(dt)
             self.t = t2
             self.osvezi()
+            # smo se zaleteli v ladjico?
+            intRadij = math.sqrt(self.r)
+            lst = self.igrica.canvas.find_overlapping(
+                self.x-intRadij, self.y-intRadij, self.x+intRadij, self.y+intRadij)
+            if self.igrica.ladjica.gid in lst:
+                self.igrica.koncaj_igro('PORAZ')
+                return 
             self.igrica.canvas.after(5, self.animiraj)
         
 
@@ -126,13 +135,22 @@ class Ladjica():
 
     def osvezi(self):
         """Postavi ladjico na zaslonu na trenutne koordinate."""
+        if not self.igrica.igra_v_teku(): return        
         self.igrica.canvas.coords(self.gid, self.x-LW/2, self.y, self.x+LW/2, self.y+LH)
 
     def zbrisi_metek(self, metek):
         self.igrica.canvas.delete(metek.gid) # zbirisi iz zaslona
         self.metki.remove(metek) # odstrani iz spiska
 
+    def zbrisi_vse_metke(self):
+        for metek in self.metki:
+            self.igrica.canvas.delete(metek.gid)
+        self.metki = []
+            
     def streljaj(self, event):
+        if self.igrica.stanje == 'ZACETEK':
+            self.igrica.zacni_igro()
+            return
         trenutni_cas = time.time()
         if (len(self.metki) < MAX_METKI and
             trenutni_cas - self.cas_streljanja > METEK_TIMEOUT):
@@ -166,6 +184,7 @@ class Metek():
         self.igrica.canvas.coords(self.gid, self.x-MW/2, self.y, self.x+MW/2, self.y+MH)
 
     def animiraj(self):
+        if not self.igrica.igra_v_teku(): return
         if self.y < -MH:
             # Metek je šel čez zgornji rob
             self.igrica.ladjica.zbrisi_metek(self)
@@ -195,40 +214,73 @@ class Igrica():
         self.canvas.delete(vesoljec.gid) # zbrisemo iz zaslona
         self.vesoljci.remove(vesoljec) # odstranimo iz spiska
         if len(self.vesoljci) == 0:
-            self.konec_igre()
+            self.koncaj_igro('ZMAGA')
 
     def __init__(self, master):
         self.canvas = tkinter.Canvas(master, width=WIDTH, height=HEIGHT, background="black")
         self.canvas.grid(row=0, column=0)
         self.canvas.focus_set()
+        self.stanje = 'START'  # IGRA - igra teče, ZMAGA - konec igre, PORAZ - konec igre s porazom
+                              # START - čakamo na začetek nove igre
         self.napis = None
+        self.vesoljci = []
+        self.ladjica = None
         self.zacni_igro()
 
+    def igra_v_teku(self):
+        return self.stanje == 'IGRA'
+    
     def izbrisi_napis(self):
         if self.napis is not None:
             self.canvas.delete(self.napis)
             self.napis = None
+
+    def odstrani_vesoljce(self):
+        for vesoljec in self.vesoljci:
+            self.canvas.delete(vesoljec.gid)
+        self.vesoljci = []
+
+    def odstrani_ladjico(self):
+        if not self.ladjica is None:
+            self.ladjica.zbrisi_vse_metke()
+            self.canvas.delete(self.ladjica.gid)
+            self.ladjica = None
             
+
     def zacni_igro(self):
         self.izbrisi_napis()
+        self.odstrani_vesoljce()
+        self.odstrani_ladjico()
         # Dodamo vesoljce
         VR = (MINVR + MAXVR)/2
         y = HEIGHT/10 + VR
         # TODO: popravi formulo, da bodo centrirani
-        x0 = (WIDTH - 2 * VR * VN - VR * (VN - 1)) / 2
-        self.vesoljci = [Vesoljec(self, x0 + i * (3 * VR), y) for i in range(VN)]
+        x0 = (WIDTH - 2 * VR * VN - VR * (VN - 1)) / 2       
+        self.stanje = 'IGRA'
         self.ladjica = Ladjica(self, WIDTH/2, 9*HEIGHT/10 - LH)
+        self.vesoljci = [Vesoljec(self, x0 + i * (3 * VR), y) for i in range(VN)]
+ 
+
+    def ponastavi_igro(self):
+        self.stanje = 'ZACETEK'
+        self.canvas.itemconfig(self.napis, text='Pritisni preslednico za novo igro')
         
-    def konec_igre(self):
-        fnt = font.Font(family='Helvetica', size=50, weight='bold')
-        self.napis = self.canvas.create_text(WIDTH/2, HEIGHT/2, text='Game over', fill='white', font=fnt) 
+    def koncaj_igro(self, stanje):
+        if(stanje != 'ZMAGA' and stanje != 'PORAZ'): return
+        self.stanje = stanje
+        fnt = font.Font(family='Helvetica', size=20, weight='bold')
+        if self.stanje == 'ZMAGA':
+            tekst = 'Yesss!!! Pokončal si vse vesoljčke in rešil svet!'
+        else:
+            tekst = 'Joj! Vesoljčki so te pokončali ... :(' 
+        self.napis = self.canvas.create_text(WIDTH/2, HEIGHT/2, text=tekst, fill='white', font=fnt)
+        self.canvas.after(3000, self.ponastavi_igro)
 
-
-
+        
 # Naredimo glavno okno
 root = tkinter.Tk()
 
-root.title("Galaxy Shootout III")
+root.title("Alien Kamikaze III")
 
 aplikacija = Igrica(root)
 
