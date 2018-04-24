@@ -9,13 +9,22 @@ import math
 # Ladjica strelja metke (pritisk na presledek)
 # Zgoraj so vesoljci
 # Ko metek zadane vesoljca, ga ubije
+# Vesoljci se gibajo v območju "črne luknje" in če pridejo blizu ladjice
+# jo uničijo.
+
+# Igra ima štiri stanja:
+# IGRA - igra teče.
+# ZMAGA - igralec je pobil vse vesoljčke in je zmagal. Zaužije trenutek slave.
+# PORAZ - vesoljček se je zaletel v ladjico. Igralec je poražen.
+# START - čakamo na začetek nove igre (pritisniti moramo preslednico)
 
 # Hierarhija objektov v igrici (logika igre):
 #
 # - Igrica
 #    (mora vedeti, v kateri Canvas se riše)
-#   * zacni_igro
-#   * koncaj_igro
+#   * zacni_igro: premakne stanje v IGRA, počisti morebitno staro igro, generira novo
+#   * koncaj_igro: premakne stanje v ZMAGA ali PORAZ
+#   * ponastavi_igro: premakne stanje v START
 #
 # - Ladjica
 #    (mora vedeti, v kateri Canvas se riše)
@@ -23,8 +32,10 @@ import math
 #   * izstreli nov metek
 #
 # - Vesoljec
-#    (mora vedeti, v kateri Canvas se riše)
-#   * (premikanje)
+#   * mora vedeti, v kateri Canvas se riše
+#   * se sam sebe animira (premika)
+#   * skrbi za detektiranje zadetka z ladjico (in potem 
+#    (premikanje)
 #
 # - Metek
 #    (mora vedeti, katera ladjica ga nadzoruje)
@@ -209,19 +220,11 @@ class Metek():
 
 class Igrica():
 
-    def zbrisi_vesoljca(self, vesoljec):
-        vesoljec.zivim = False
-        self.canvas.delete(vesoljec.gid) # zbrisemo iz zaslona
-        self.vesoljci.remove(vesoljec) # odstranimo iz spiska
-        if len(self.vesoljci) == 0:
-            self.koncaj_igro('ZMAGA')
-
     def __init__(self, master):
         self.canvas = tkinter.Canvas(master, width=WIDTH, height=HEIGHT, background="black")
         self.canvas.grid(row=0, column=0)
         self.canvas.focus_set()
-        self.stanje = 'START'  # IGRA - igra teče, ZMAGA - konec igre, PORAZ - konec igre s porazom
-                              # START - čakamo na začetek nove igre
+        self.stanje = 'START'  
         self.napis = None
         self.vesoljci = []
         self.ladjica = None
@@ -234,6 +237,13 @@ class Igrica():
         if self.napis is not None:
             self.canvas.delete(self.napis)
             self.napis = None
+
+    def zbrisi_vesoljca(self, vesoljec):
+        vesoljec.zivim = False
+        self.canvas.delete(vesoljec.gid) # zbrisemo iz zaslona
+        self.vesoljci.remove(vesoljec) # odstranimo iz spiska
+        if len(self.vesoljci) == 0:
+            self.koncaj_igro('ZMAGA')
 
     def odstrani_vesoljce(self):
         for vesoljec in self.vesoljci:
