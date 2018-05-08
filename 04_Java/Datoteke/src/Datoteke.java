@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Datoteke {
@@ -46,12 +48,30 @@ public class Datoteke {
         }
     }
     
+    public static void frekvencaBesed(String niz) {
+        String [] besede = niz.split("\\s+");
+        Map<String, Integer> stevci = new HashMap<String, Integer>();
+        for(int i = 0; i < besede.length; i++) {
+            String enaBeseda = besede[i];
+            if(!stevci.containsKey(enaBeseda)) {
+                stevci.put(enaBeseda, 1);
+            } else {
+                stevci.put(enaBeseda, stevci.get(enaBeseda) + 1);
+            }           
+        }
+        
+        for(String kljuc: stevci.keySet()) {
+            System.out.println(kljuc + ":" + stevci.get(kljuc) );
+        }
+    }
     
     public static void pisiBrisi() {
         try {
             String ime = celaPot("test1.txt");
             pisi(ime);
             String prebrano = beri1(ime);
+            System.out.println("----------");
+            frekvencaBesed(prebrano);
             System.out.println("Prebral sem:");
             System.out.println(prebrano);
         } catch(Exception e) {
