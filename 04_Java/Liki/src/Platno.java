@@ -24,6 +24,12 @@ public class Platno extends JPanel {
         repaint();
     }
 
+    public Lik zadnjiLik() {
+        if(liki == null) return null;
+        if(liki.size() == 0) return null;
+        return liki.get(liki.size() - 1);
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

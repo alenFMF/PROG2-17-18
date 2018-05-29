@@ -15,13 +15,22 @@ public class Krog extends Lik {
 
     @Override
     public void narisiSe(Graphics g) {
-        g.fillOval(x - r, y - r, 2*r, 2*r);
+        g.setColor(this.getBarvaObrobe());
+        g.drawOval(x - r, y - r, 2*r, 2*r);
         
     }
 
     @Override
     public String toString() {
         return String.format("Krog [r=%d]", r);
+    }
+
+    public int getR() {
+        return r;
+    }
+
+    public void setR(int r) {
+        this.r = r;
     }
     
     
